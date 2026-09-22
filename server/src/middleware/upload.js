@@ -1,6 +1,7 @@
 const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
+const ApiError = require('../utils/ApiError');
 const { maxUploadBytes } = require('../config/env');
 
 const ALLOWED_MIME_TO_TYPE = {
@@ -23,8 +24,12 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
+  // multer.MulterError's 2nd constructor arg is a field name, not a custom
+  // message (its message is always looked up from the error code), so an
+  // unsupported type is surfaced as a plain ApiError instead to keep a
+  // useful message reaching the client.
   if (!ALLOWED_MIME_TO_TYPE[file.mimetype]) {
-    cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'Unsupported file type. Upload a video (mp4/mov/mkv) or image (jpg/png/webp).'));
+    cb(new ApiError(400, 'Unsupported file type. Upload a video (mp4/mov/mkv) or image (jpg/png/webp).', 'UNSUPPORTED_FILE_TYPE'));
     return;
   }
   cb(null, true);
